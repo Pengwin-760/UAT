@@ -4,14 +4,16 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - '.buildkit/**'
       - 'MagicDraw_UAT_Comparator_GUI.pyw'
-      - 'UAT_Fingerprint_Comparator_v1_9.py'
+      - 'Build_MagicDraw_UAT_Comparator.ps1'
       - 'MagicDraw_UAT_Comparator_version_info.txt'
       - '.github/workflows/build-windows-exe.yml'
 
 jobs:
   build-windows:
     runs-on: windows-latest
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -24,9 +26,35 @@ jobs:
       - name: Install PyInstaller
         run: python -m pip install "pyinstaller==6.22.2"
 
+      - name: Reconstruct comparator build source
+        shell: pwsh
+        run: |
+          $parts = Get-ChildItem ".buildkit\buildkit.zip.b64.part*" | Sort-Object Name
+          if ($parts.Count -ne 4) {
+            throw "Expected 4 embedded build-kit parts; found $($parts.Count)."
+          }
+
+          $base64 = ($parts | ForEach-Object { (Get-Content $_.FullName -Raw).Trim() }) -join ""
+          [IO.File]::WriteAllBytes("buildkit.zip", [Convert]::FromBase64String($base64))
+          Expand-Archive -Path "buildkit.zip" -DestinationPath "_buildsrc" -Force
+
+          $source = Join-Path $PWD "_buildsrc\MagicDraw_UAT_Comparator_BuildKit"
+          foreach ($required in @(
+            "MagicDraw_UAT_Comparator_GUI.pyw",
+            "UAT_Fingerprint_Comparator_v1_9.py",
+            "MagicDraw_UAT_Comparator_version_info.txt"
+          )) {
+            if (-not (Test-Path (Join-Path $source $required))) {
+              throw "Missing required build source: $required"
+            }
+          }
+
+          "BUILD_SOURCE=$source" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
       - name: Build Windows application
         shell: pwsh
         run: |
+          Set-Location $env:BUILD_SOURCE
           python -m PyInstaller `
             --noconfirm `
             --clean `
@@ -35,16 +63,20 @@ jobs:
             --name "MagicDraw_UAT_Comparator" `
             --version-file "MagicDraw_UAT_Comparator_version_info.txt" `
             "MagicDraw_UAT_Comparator_GUI.pyw"
+
           @"
           MagicDraw Migration UAT Comparator 1.0.0
 
           Expected inputs:
             Baseline  = MagicDraw 2022xR2 fingerprint JSON
             Candidate = MagicDraw 2024xR3 fingerprint JSON
+
+          Run MagicDraw_UAT_Comparator.exe. Python is not required on tester workstations.
           "@ | Set-Content -Path "dist\MagicDraw_UAT_Comparator\README.txt" -Encoding UTF8
 
       - name: Upload portable Windows build
         uses: actions/upload-artifact@v4
         with:
           name: MagicDraw_UAT_Comparator_1.0.0_Windows_x64
-          path: dist/MagicDraw_UAT_Comparator/
+          path: ${{ env.BUILD_SOURCE }}/dist/MagicDraw_UAT_Comparator/
+          if-no-files-found: error
