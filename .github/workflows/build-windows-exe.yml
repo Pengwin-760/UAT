@@ -1,0 +1,50 @@
+name: Build MagicDraw UAT Comparator
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'MagicDraw_UAT_Comparator_GUI.pyw'
+      - 'UAT_Fingerprint_Comparator_v1_9.py'
+      - 'MagicDraw_UAT_Comparator_version_info.txt'
+      - '.github/workflows/build-windows-exe.yml'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install PyInstaller
+        run: python -m pip install "pyinstaller==6.22.2"
+
+      - name: Build Windows application
+        shell: pwsh
+        run: |
+          python -m PyInstaller `
+            --noconfirm `
+            --clean `
+            --windowed `
+            --onedir `
+            --name "MagicDraw_UAT_Comparator" `
+            --version-file "MagicDraw_UAT_Comparator_version_info.txt" `
+            "MagicDraw_UAT_Comparator_GUI.pyw"
+          @"
+          MagicDraw Migration UAT Comparator 1.0.0
+
+          Expected inputs:
+            Baseline  = MagicDraw 2022xR2 fingerprint JSON
+            Candidate = MagicDraw 2024xR3 fingerprint JSON
+          "@ | Set-Content -Path "dist\MagicDraw_UAT_Comparator\README.txt" -Encoding UTF8
+
+      - name: Upload portable Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: MagicDraw_UAT_Comparator_1.0.0_Windows_x64
+          path: dist/MagicDraw_UAT_Comparator/
