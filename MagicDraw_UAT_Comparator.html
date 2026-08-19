@@ -1,1 +1,99 @@
-PLACEHOLDER
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MagicDraw Migration UAT Comparator</title>
+<link rel="stylesheet" href="browser/comparator.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div><h1>MagicDraw Migration UAT Comparator</h1><p>Local, browser-based comparison for MagicDraw 2022xR2 → 2024xR3 migration acceptance.</p></div>
+    <span class="version">Browser Comparator 1.4 · Fingerprint schema 1.x</span>
+  </div>
+
+  <section class="panel input-panel">
+    <h2>1. Select fingerprints</h2>
+    <p class="subtle">Files remain on this workstation. This page does not upload the JSONs or make network requests.</p>
+    <div class="inputs">
+      <div class="input-card">
+        <h3>Baseline fingerprint</h3>
+        <div class="expected base">EXPECTED: MagicDraw 2022xR2</div>
+        <div class="file-picker"><label class="pick" for="baselineFile">Select 2022 JSON</label><span class="filename" id="baselineName">No file selected</span></div>
+        <input id="baselineFile" type="file" accept=".json,application/json">
+        <div class="file-status" id="baselineStatus">Waiting for the 2022xR2 baseline fingerprint.</div>
+      </div>
+      <div class="input-card">
+        <h3>Candidate fingerprint</h3>
+        <div class="expected cand">EXPECTED: MagicDraw 2024xR3</div>
+        <div class="file-picker"><label class="pick" for="candidateFile">Select 2024 JSON</label><span class="filename" id="candidateName">No file selected</span></div>
+        <input id="candidateFile" type="file" accept=".json,application/json">
+        <div class="file-status" id="candidateStatus">Waiting for the 2024xR3 candidate fingerprint.</div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="compareBtn" disabled>Compare 2022xR2 → 2024xR3</button>
+      <button class="btn" id="resetBtn">Reset</button>
+    </div>
+    <div class="progress hidden" id="progress"><div id="progressBar"></div></div>
+    <div class="statusline" id="statusLine"></div>
+  </section>
+
+  <div id="results" class="hidden">
+    <section class="panel">
+      <div class="overall"><span id="overallBadge" class="overall-badge"></span><div><h2 style="margin:0">Acceptance result</h2><div id="overallText" class="subtle"></div></div></div>
+      <div id="warnings"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Acceptance summary</h2>
+      <p class="subtle">Inventory change and semantic findings are separated. Tagged-value inventory counts are kept in Technical diagnostics because MagicDraw may auto-instantiate tag slots; the management summary reports only meaningful tagged-value findings. Click a Findings number to show only findings that contribute to that capability.</p>
+      <div style="overflow:auto"><table id="summaryTable"><thead><tr><th>Capability</th><th class="num">Baseline</th><th class="num">Candidate</th><th class="num">Net Δ</th><th>Findings</th><th>Result</th></tr></thead><tbody></tbody></table></div>
+    </section>
+
+    <section class="panel" id="findingsPanel">
+      <h2>Detailed findings</h2>
+      <p class="subtle">Only normalized semantic findings are shown. Structured expression bodies are presented as expressions rather than raw XML or generic items. Collection counts use context-specific terms such as linked elements, columns, table rows, displayed elements, values, or model references; generic collections are called items. The Change column explicitly identifies ADDED, MISSING, REMOVED, CHANGED, MOVED, and other inferred change types. Raw MagicDraw serialization is hidden by default under Technical details.</p>
+      <div class="filters">
+        <button class="btn" data-quick="all">All</button>
+        <button class="btn" data-quick="changed">Changed objects</button>
+        <button class="btn" data-quick="missing">Missing objects</button>
+        <button class="btn" data-quick="added">Added objects</button>
+        <button class="btn" data-quick="diagramChanged">Changed diagrams</button>
+        <button class="btn" data-quick="fail">FAIL only</button>
+        <button class="btn" data-quick="review">REVIEW only</button>
+        <button class="btn" id="expandBtn">Expand visible</button><button class="btn" id="collapseBtn">Collapse visible</button>
+      </div>
+      <div class="filters">
+        <label>Metric <select id="metricFilter"></select></label>
+        <label>Category <select id="categoryFilter"></select></label>
+        <label>Property <select id="propertyFilter"></select></label>
+        <label>Metaclass <select id="metaclassFilter"></select></label>
+        <input id="searchFilter" type="search" placeholder="Search element, property, value, ID…">
+      </div>
+      <div class="chips" id="activeChips"></div>
+      <div class="counter" id="findingCounter"></div>
+      <div id="findingList"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Export</h2><p class="subtle">Exports contain the locally generated comparison only.</p>
+      <div class="actions">
+        <button class="btn" id="exportHtmlBtn">Export management HTML</button>
+        <button class="btn" id="exportCsvBtn">Export findings CSV</button>
+        <button class="btn" id="exportJsonBtn">Export comparison JSON</button>
+        <button class="btn" id="printBtn">Print / Save PDF</button>
+      </div>
+    </section>
+
+    <details class="panel diag"><summary><strong>Technical diagnostics</strong></summary><div id="diagnostics"></div></details>
+  </div>
+  <div class="footer">MagicDraw Migration UAT Comparator · Static browser application · No server required</div>
+</div>
+
+<script src="browser/comparator-core-1.js"></script>
+<script src="browser/comparator-core-2.js"></script>
+<script src="browser/comparator-core-3.js"></script>
+<script src="browser/comparator-ui.js"></script>
+</body></html>
